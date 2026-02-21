@@ -122,6 +122,17 @@ body {
   transition: width 0.5s ease-out;
 }
 
+/* Impact ripple rings — expanding pulse from verdict center */
+@keyframes ripple-expand {
+  0% { r: 0; opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { opacity: 0.5; }
+}
+
+.ripple-ring {
+  animation: ripple-expand 0.8s ease-out both;
+}
+
 /* ─── ACCESSIBILITY ─── */
 
 /* Visible focus indicators (WCAG 2.2) */

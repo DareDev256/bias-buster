@@ -67,6 +67,23 @@ export interface GameResults {
   totalQuestions: number;
 }
 
+// ─── Consequence Visualization ───
+export type ImpactType = "positive" | "negative" | "neutral";
+
+export interface ImpactRipple {
+  sphere: string;           // e.g. "Public Opinion", "City Budget", "Civil Liberties"
+  magnitude: number;        // 0–100, how severe the impact
+  type: ImpactType;
+  headline: string;         // newspaper-style one-liner
+}
+
+export interface CaseOutcome {
+  title: string;            // case name
+  verdict: string;          // ruling summary
+  ripples: ImpactRipple[];
+  summary: string;          // editorial-style wrap-up
+}
+
 // ─── Mastery Gate ───
 // Kumon-style: must hit 90% accuracy on last 3 attempts to advance
 export interface MasteryCheck {
