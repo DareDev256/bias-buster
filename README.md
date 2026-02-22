@@ -46,6 +46,7 @@ Zero API keys required. All scenarios and consequences are pre-written.
 ## Documentation
 
 - [`docs/research-saga-mcp.md`](docs/research-saga-mcp.md) — Research on Saga MCP server for AI agent task tracking, with integration analysis for content pipeline management
+- [`docs/research-claude-code-security.md`](docs/research-claude-code-security.md) — Research on Anthropic's Claude Code Security for AI-driven vulnerability discovery, with scenario mapping for ethics curriculum
 
 ## Project
 

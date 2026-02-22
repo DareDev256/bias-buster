@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.2] — 2026-02-21
+
+### Added
+- **Claude Code Security research doc** (`docs/research-claude-code-security.md`) — analysis of Anthropic's AI-driven vulnerability scanner (500+ decade-old bugs found), multi-stage verification pipeline, market impact, and mapping to Bias Buster's ethics curriculum as scenario material and design pattern reference
+
 ## [0.2.1] — 2026-02-21
 
 ### Added
