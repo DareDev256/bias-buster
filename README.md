@@ -47,6 +47,7 @@ Zero API keys required. All scenarios and consequences are pre-written.
 
 - [`docs/research-saga-mcp.md`](docs/research-saga-mcp.md) — Research on Saga MCP server for AI agent task tracking, with integration analysis for content pipeline management
 - [`docs/research-claude-code-security.md`](docs/research-claude-code-security.md) — Research on Anthropic's Claude Code Security for AI-driven vulnerability discovery, with scenario mapping for ethics curriculum
+- [`docs/research-agentic-ai-cyber-warfare.md`](docs/research-agentic-ai-cyber-warfare.md) — Research on AI-orchestrated cyber espionage and the dual-use dilemma of agentic AI in cybersecurity
 
 ## Project
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.3] — 2026-02-21
+
+### Added
+- **Agentic AI Cyber Warfare research doc** (`docs/research-agentic-ai-cyber-warfare.md`) — analysis of the September 2025 AI-orchestrated cyber espionage campaign (80–90% autonomous, ~30 targets) and the February 2026 Claude Code Security launch that wiped billions off cybersecurity stocks, with dual-use dilemma scenario mapping for ethics curriculum
+
 ## [0.2.2] — 2026-02-21
 
 ### Added
