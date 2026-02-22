@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { CaseOutcome, ImpactRipple } from "@/types/game";
+import { generateHeadline } from "@/utils/headlineGenerator";
 
 const impactColor = (type: ImpactRipple["type"]) =>
   type === "positive" ? "var(--game-primary)" : type === "negative" ? "var(--game-secondary)" : "var(--game-accent)";
@@ -90,6 +91,14 @@ function Headline({ ripple, index }: { ripple: ImpactRipple; index: number }) {
 }
 
 export default function ConsequenceVisualization({ outcome }: { outcome: CaseOutcome }) {
+  const headline = generateHeadline(outcome);
+  const severityAccent =
+    headline.severity === "landmark"
+      ? "var(--game-secondary)"
+      : headline.severity === "significant"
+        ? "var(--game-primary)"
+        : "var(--game-accent)";
+
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -121,6 +130,44 @@ export default function ConsequenceVisualization({ outcome }: { outcome: CaseOut
           {outcome.verdict}
         </div>
       </motion.header>
+
+      {/* ── FRONT PAGE BANNER ── */}
+      <motion.div
+        initial={{ opacity: 0, rotateX: 90 }}
+        animate={{ opacity: 1, rotateX: 0 }}
+        transition={{ delay: 0.15, duration: 0.7, ease: "easeOut" }}
+        style={{ transformOrigin: "top center", perspective: 600 }}
+        className="mb-6"
+      >
+        <div
+          className="front-page-banner text-center py-4 px-3"
+          style={{ borderTop: `2px solid ${severityAccent}`, borderBottom: `2px solid ${severityAccent}` }}
+          role="banner"
+          aria-label={`Front page: ${headline.banner}`}
+        >
+          <div
+            className="text-[5px] tracking-[0.5em] font-pixel mb-2 uppercase"
+            style={{ color: severityAccent }}
+          >
+            {headline.edition} ─ {headline.dateline}
+          </div>
+          <h3
+            className="font-headline text-base sm:text-lg leading-tight tracking-tight"
+            style={{ color: "var(--game-accent)" }}
+          >
+            {headline.banner}
+          </h3>
+          {headline.severity === "landmark" && (
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.8, duration: 0.5, ease: "easeOut" }}
+              className="mt-2 mx-auto h-[2px] w-3/4"
+              style={{ backgroundColor: severityAccent }}
+            />
+          )}
+        </div>
+      </motion.div>
 
       {/* ripple visualization */}
       <motion.div

@@ -26,6 +26,7 @@
   --color-game-success: var(--game-success);
 
   --font-pixel: "Press Start 2P", monospace;
+  --font-headline: var(--font-playfair), "Georgia", "Times New Roman", serif;
 
   --animate-pulse-neon: pulse-neon 2s ease-in-out infinite;
   --animate-scanline: scanline 8s linear infinite;
@@ -120,6 +121,22 @@ body {
 /* XP bar fill animation */
 .xp-fill {
   transition: width 0.5s ease-out;
+}
+
+/* Authority serif for front-page headlines */
+.font-headline {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-style: italic;
+}
+
+/* Front page banner unfurl (Verdict Scroll aesthetic) */
+.front-page-banner {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 100%
+  );
 }
 
 /* Impact ripple rings — expanding pulse from verdict center */

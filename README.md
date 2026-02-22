@@ -8,6 +8,7 @@ A web-based educational game that teaches AI ethics through branching narrative 
 
 - **Branching Narrative** — 2–3 decision options per scenario, none obviously correct
 - **Consequence Visualization** — SVG impact ripples + newspaper-headline UI showing how rulings cascade through public opinion, civil liberties, and city resources
+- **Dynamic Front-Page Headlines** — algorithmically generated broadsheet-style banner headlines that synthesize ripple severity into dramatic verdict announcements, with Playfair Display serif typography and Verdict Scroll unfurl animation
 - **Ethics Radar** — tracks Fairness, Transparency, Privacy, Accountability across decisions
 - **Spaced Repetition** — FSRS-4.5 algorithm ensures long-term retention of ethical concepts
 - **Mastery Gates** — Kumon-style progression: 90% accuracy on 3 consecutive attempts to advance

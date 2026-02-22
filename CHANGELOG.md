@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] — 2026-02-21
+
+### Added
+- **Dynamic front-page headline generator** (`src/utils/headlineGenerator.ts`) — deterministic algorithm that analyzes ripple severity, dominant sphere, and outcome polarity to craft broadsheet-style banner headlines with edition tags and fictional datelines
+- **Front-Page Banner UI** — Verdict Scroll unfurl animation (rotateX reveal) in Consequence Visualization, with severity-coded accent colors (amber for landmark, teal for significant, silver for routine)
+- **Playfair Display serif font** — loaded via `next/font/google` as CSS variable `--font-playfair`, providing authoritative newspaper masthead typography contrasting the pixel UI
+- `.font-headline` CSS class and `.front-page-banner` styling for broadsheet aesthetic
+
 ## [0.2.3] — 2026-02-21
 
 ### Added
