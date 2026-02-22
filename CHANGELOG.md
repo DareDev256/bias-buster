@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0] — 2026-02-21
+
+### Added
+- **Playable scenario engine** (`src/app/play/page.tsx`) — end-to-end game flow with 3-phase decision reveal (scenario → consequence → lesson), progress pips, equity scoring, and session summary screen
+- **5 starter scenarios** (`src/data/scenarios.ts`) — 3 Hiring & Recruitment scenarios (resume screening bias, video interview analysis, salary negotiation gender bias) + 2 Content Moderation scenarios (racial bias in toxicity detection, government criticism censorship)
+- `BiasScenario` and `Decision` types for scenario data modeling
+- Broadsheet-style consequence animations using `clipPath` horizontal unroll
+- Delayed long-term consequence reveal (2.5s after immediate impact) for temporal weight
+- Session summary with per-scenario equity impact bars and play-again loop
+
 ## [0.3.0] — 2026-02-21
 
 ### Added
