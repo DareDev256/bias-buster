@@ -43,6 +43,10 @@ Zero API keys required. All scenarios and consequences are pre-written.
 | `--game-accent` | `#bdc3c7` | Silver — neutral UI, body text |
 | `--game-dark` | `#0a1510` | Dark teal — backgrounds |
 
+## Documentation
+
+- [`docs/research-saga-mcp.md`](docs/research-saga-mcp.md) — Research on Saga MCP server for AI agent task tracking, with integration analysis for content pipeline management
+
 ## Project
 
 Part of the **Passionate Learning** series by [DareDev256](https://github.com/DareDev256).

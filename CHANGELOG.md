@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.1] — 2026-02-21
+
+### Added
+- **Saga MCP research doc** (`docs/research-saga-mcp.md`) — analysis of Saga project tracker for AI agent task management, mapping its hierarchy to Bias Buster's content pipeline (scenario domains → decisions → consequence chains), comparison with Passion Memory MCP
+
 ## [0.2.0] — 2026-02-21
 
 ### Added
