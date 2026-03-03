@@ -1,49 +1,75 @@
 import { ContentItem, Category } from "@/types/game";
+import { scenarios } from "@/data/scenarios";
 
-// ─── TEMPLATE CURRICULUM ───
-// Each game REPLACES this entire file with its own content.
-// This serves as the structural example.
+// ─── BIAS BUSTER CURRICULUM ───
+// Categories derived from real scenarios in scenarios.ts
 
 export const categories: Category[] = [
   {
-    id: "getting-started",
-    title: "Getting Started",
-    description: "Your first steps",
-    icon: ">>",
+    id: "hiring",
+    title: "Hiring & Recruitment",
+    description: "AI-powered hiring tools can amplify historical bias at scale. Learn to spot and fix discriminatory patterns before they cause real harm.",
+    icon: "⚖️",
     levels: [
       {
         id: 1,
-        name: "Basics",
-        items: ["gs-001", "gs-002", "gs-003", "gs-004", "gs-005"],
+        name: "Resume Screening",
+        items: ["hr-001"],
         requiredXp: 0,
-        gameMode: "standard",
+        gameMode: "scenario",
       },
       {
         id: 2,
-        name: "Fundamentals",
-        items: ["gs-006", "gs-007", "gs-008", "gs-009", "gs-010"],
+        name: "Interview Analysis",
+        items: ["hr-002"],
+        requiredXp: 20,
+        gameMode: "scenario",
+      },
+      {
+        id: 3,
+        name: "Systemic Fixes",
+        items: ["hr-003"],
         requiredXp: 50,
-        gameMode: "standard",
+        gameMode: "scenario",
+      },
+    ],
+  },
+  {
+    id: "content-moderation",
+    title: "Content Moderation",
+    description: "When AI decides what speech is allowed, bias becomes censorship. Navigate the tension between safety and free expression.",
+    icon: "🛡️",
+    levels: [
+      {
+        id: 1,
+        name: "Racial Bias in Moderation",
+        items: ["cm-001"],
+        requiredXp: 0,
+        gameMode: "scenario",
+      },
+      {
+        id: 2,
+        name: "Censorship vs Safety",
+        items: ["cm-002"],
+        requiredXp: 30,
+        gameMode: "scenario",
       },
     ],
   },
 ];
 
-export const items: ContentItem[] = [
-  {
-    id: "gs-001",
-    prompt: "This is the question or scenario the player sees",
-    answer: "This is the correct answer or action",
-    category: "getting-started",
-    difficulty: "easy",
-    enrichment: {
-      whyItMatters: "Explains why this concept matters in the real world",
-      realWorldExample: "A concrete example of this concept in action",
-      proTip: "An advanced insight for those who want to go deeper",
-    },
+// Build ContentItems from scenarios for compatibility with template systems
+export const items: ContentItem[] = scenarios.map((s) => ({
+  id: s.id,
+  prompt: s.prompt,
+  answer: s.decisions.reduce((best, d) => (d.impactScore > best.impactScore ? d : best)).label,
+  category: s.category,
+  difficulty: s.category === "hiring" && s.id === "hr-001" ? "easy" as const : "medium" as const,
+  enrichment: {
+    whyItMatters: s.decisions.reduce((best, d) => (d.impactScore > best.impactScore ? d : best)).lesson,
+    realWorldExample: s.decisions[0].longTermResult,
   },
-  // Add more items...
-];
+}));
 
 // Helper: get items by category
 export function getItemsByCategory(categoryId: string): ContentItem[] {
