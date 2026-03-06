@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { scenarios, type Decision, type BiasScenario } from "@/data/scenarios";
+import { ScalesOfImpact } from "@/components/game/ScalesOfImpact";
 
 type Phase = "scenario" | "consequence" | "lesson" | "summary";
 
@@ -54,14 +55,26 @@ export default function PlayPage() {
     }
   }, [chosen, current, index]);
 
+  // Max possible equity — all scenarios for summary, played scenarios for in-game
+  const maxPossible = useMemo(
+    () => scenarios.reduce((s, sc) => s + Math.max(...sc.decisions.map((d) => d.impactScore)), 0),
+    [],
+  );
+  const maxScoreSoFar = useMemo(
+    () => history.reduce((s, h) => s + Math.max(...h.scenario.decisions.map((d) => d.impactScore)), 0),
+    [history],
+  );
+
   // ── SUMMARY SCREEN ──
   if (isFinished) {
-    const maxPossible = scenarios.reduce((s, sc) => s + Math.max(...sc.decisions.map((d) => d.impactScore)), 0);
     const pct = Math.round((totalScore / maxPossible) * 100);
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md text-center">
           <div className="text-[6px] tracking-[0.5em] text-game-accent/50 font-pixel mb-4">━━ FINAL EDITION ━━</div>
+          <div className="flex justify-center mb-4">
+            <ScalesOfImpact score={totalScore} maxScore={maxPossible} decisionsPlayed={history.length} />
+          </div>
           <h1 className="font-headline text-2xl text-game-accent mb-2">SESSION COMPLETE</h1>
           <div className="text-[8px] font-pixel mb-6" style={{ color: pct >= 70 ? "var(--game-primary)" : "var(--game-secondary)" }}>
             EQUITY SCORE: {totalScore}/{maxPossible} ({pct}%)
@@ -90,6 +103,11 @@ export default function PlayPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6">
+      {/* Scales of Impact — always visible during gameplay */}
+      <div className="mb-4">
+        <ScalesOfImpact score={totalScore} maxScore={maxScoreSoFar} decisionsPlayed={history.length} />
+      </div>
+
       {/* progress pips */}
       <div className="flex gap-2 mb-6" role="progressbar" aria-valuenow={index + 1} aria-valuemax={scenarios.length}>
         {scenarios.map((_, i) => (

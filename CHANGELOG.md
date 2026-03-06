@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] — 2026-03-06
+
+### Added
+- **Scales of Impact** component (`src/components/game/ScalesOfImpact.tsx`) — dynamic SVG scales-of-justice that tilt based on cumulative equity score, with teal (equity) and amber (adverse) pans, weight-proportional indicator circles, spring-physics CSS transitions, and ARIA accessibility
+- Scales integrated into play page during active gameplay and on summary screen
+- `maxPossible` and `maxScoreSoFar` memoized computations for efficient score tracking
+
 ## [0.4.0] — 2026-02-21
 
 ### Added

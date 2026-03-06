@@ -10,6 +10,7 @@ A web-based educational game that teaches AI ethics through branching narrative 
 - **3-Phase Decision Flow** — scenario prompt → immediate consequence → delayed long-term reveal → lesson takeaway, with broadsheet-style newspaper animations
 - **Consequence Visualization** — SVG impact ripples + newspaper-headline UI showing how rulings cascade through public opinion, civil liberties, and city resources
 - **Dynamic Front-Page Headlines** — algorithmically generated broadsheet-style banner headlines with Playfair Display serif typography and Verdict Scroll unfurl animation
+- **Scales of Impact** — always-visible SVG scales-of-justice that tilt dynamically as decisions accumulate, with teal (equity) and amber (adverse) weight indicators and spring-physics animation
 - **Equity Scoring** — impact-based scoring (2/5/10) that rewards equitable outcomes without moralizing
 - **Ethics Radar** — tracks Fairness, Transparency, Privacy, Accountability across decisions
 - **Spaced Repetition** — FSRS-4.5 algorithm ensures long-term retention of ethical concepts
