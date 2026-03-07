@@ -4,6 +4,8 @@ import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { scenarios, type Decision, type BiasScenario } from "@/data/scenarios";
 import { ScalesOfImpact } from "@/components/game/ScalesOfImpact";
+import { addXP, updateStreak, updateItemScore, recordLearningEvent, recordMasteryAttempt, completeLevel } from "@/lib/storage";
+import { categories } from "@/data/curriculum";
 
 type Phase = "scenario" | "consequence" | "lesson" | "summary";
 
@@ -16,6 +18,18 @@ const CATEGORY_LABEL: Record<string, string> = {
   hiring: "HIRING & RECRUITMENT",
   "content-moderation": "CONTENT MODERATION",
 };
+
+/** Find which category+level a scenario belongs to */
+function findLevelForScenario(scenarioId: string): { categoryId: string; levelId: number } | null {
+  for (const cat of categories) {
+    for (const level of cat.levels) {
+      if (level.items.includes(scenarioId)) {
+        return { categoryId: cat.id, levelId: level.id };
+      }
+    }
+  }
+  return null;
+}
 
 export default function PlayPage() {
   const [index, setIndex] = useState(0);
@@ -32,7 +46,6 @@ export default function PlayPage() {
     setChosen(d);
     setPhase("consequence");
     setShowLongTerm(false);
-    // Reveal long-term after 2.5s
     setTimeout(() => setShowLongTerm(true), 2500);
   }, []);
 
@@ -40,12 +53,66 @@ export default function PlayPage() {
     setPhase("lesson");
   }, []);
 
+  /** Persist per-scenario progress: item score + analytics + XP */
+  const persistScenarioResult = useCallback((scenario: BiasScenario, decision: Decision) => {
+    const bestScore = Math.max(...scenario.decisions.map((d) => d.impactScore));
+    const isOptimal = decision.impactScore === bestScore;
+
+    updateItemScore(scenario.id, isOptimal);
+    recordLearningEvent({
+      type: isOptimal ? "first_correct" : "review_incorrect",
+      itemId: scenario.id,
+      timestamp: Date.now(),
+      accuracy: Math.round((decision.impactScore / bestScore) * 100),
+    });
+
+    // Award XP proportional to impact score (1-10 mapped to 5-50 XP)
+    addXP(decision.impactScore * 5);
+
+    // Mark level complete if this scenario belongs to one
+    const levelInfo = findLevelForScenario(scenario.id);
+    if (levelInfo) {
+      completeLevel(levelInfo.categoryId, levelInfo.levelId);
+    }
+  }, []);
+
+  /** Persist session-level progress: streak + mastery */
+  const persistSessionResult = useCallback((allPlayed: PlayedDecision[]) => {
+    updateStreak();
+
+    // Record mastery attempt per category
+    const byCategory = new Map<string, { score: number; max: number }>();
+    for (const h of allPlayed) {
+      const best = Math.max(...h.scenario.decisions.map((d) => d.impactScore));
+      const cat = h.scenario.category;
+      const existing = byCategory.get(cat) || { score: 0, max: 0 };
+      byCategory.set(cat, { score: existing.score + h.decision.impactScore, max: existing.max + best });
+    }
+    for (const [catId, { score: catScore, max: catMax }] of byCategory) {
+      const accuracy = catMax > 0 ? Math.round((catScore / catMax) * 100) : 0;
+      const catObj = categories.find((c) => c.id === catId);
+      if (catObj) {
+        for (const level of catObj.levels) {
+          if (allPlayed.some((h) => level.items.includes(h.scenario.id))) {
+            recordMasteryAttempt(`${catId}-${level.id}`, accuracy);
+          }
+        }
+      }
+    }
+  }, []);
+
   const advance = useCallback(() => {
     if (!chosen || !current) return;
     const played: PlayedDecision = { scenario: current, decision: chosen };
-    setHistory((h) => [...h, played]);
+
+    // Persist this scenario's result immediately
+    persistScenarioResult(current, chosen);
+
+    const newHistory = [...history, played];
+    setHistory(newHistory);
     setTotalScore((s) => s + chosen.impactScore);
     if (index + 1 >= scenarios.length) {
+      persistSessionResult(newHistory);
       setPhase("summary");
     } else {
       setIndex((i) => i + 1);
@@ -53,17 +120,20 @@ export default function PlayPage() {
       setChosen(null);
       setShowLongTerm(false);
     }
-  }, [chosen, current, index]);
+  }, [chosen, current, index, history, persistScenarioResult, persistSessionResult]);
 
   // Max possible equity — all scenarios for summary, played scenarios for in-game
   const maxPossible = useMemo(
     () => scenarios.reduce((s, sc) => s + Math.max(...sc.decisions.map((d) => d.impactScore)), 0),
     [],
   );
-  const maxScoreSoFar = useMemo(
-    () => history.reduce((s, h) => s + Math.max(...h.scenario.decisions.map((d) => d.impactScore)), 0),
-    [history],
-  );
+  // Include the current scenario's max in the denominator so scales aren't stale
+  const maxScoreSoFar = useMemo(() => {
+    const historyMax = history.reduce((s, h) => s + Math.max(...h.scenario.decisions.map((d) => d.impactScore)), 0);
+    const currentMax = current ? Math.max(...current.decisions.map((d) => d.impactScore)) : 0;
+    // If we've made a choice for the current scenario, include its max
+    return chosen ? historyMax + currentMax : historyMax;
+  }, [history, current, chosen]);
 
   // ── SUMMARY SCREEN ──
   if (isFinished) {
@@ -105,7 +175,7 @@ export default function PlayPage() {
     <main className="min-h-screen flex flex-col items-center justify-center p-6">
       {/* Scales of Impact — always visible during gameplay */}
       <div className="mb-4">
-        <ScalesOfImpact score={totalScore} maxScore={maxScoreSoFar} decisionsPlayed={history.length} />
+        <ScalesOfImpact score={totalScore + (chosen ? chosen.impactScore : 0)} maxScore={maxScoreSoFar} decisionsPlayed={history.length + (chosen ? 1 : 0)} />
       </div>
 
       {/* progress pips */}

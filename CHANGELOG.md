@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1] — 2026-03-07
+
+### Fixed
+- **Play page now persists progress to localStorage** — gameplay was completely disconnected from the XP, streak, mastery, and analytics systems. Decisions now record item scores, award XP (5-50 per scenario based on impact), mark curriculum levels as complete, update daily streaks, and record mastery attempts per category
+- **Scales of Impact stale data on first decision** — scales showed 0/0 during consequence and lesson phases because `maxScoreSoFar` only included completed history entries. Now includes the current scenario's max score and the current decision's impact score immediately after choosing, so the scales animate on the first decision
+- **React 19 ref-during-render violation** — moved session persistence logic out of render phase into the `advance` callback to comply with React 19's stricter ref access rules
+
 ## [0.5.0] — 2026-03-06
 
 ### Added
