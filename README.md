@@ -20,6 +20,13 @@ A web-based educational game that teaches AI ethics through branching narrative 
 - **Procedural Audio** — Web Audio API sound effects, zero external dependencies
 - **CRT Aesthetic** — scanline overlay, neon glow, pixel borders, retro typography
 
+## Security
+
+- **Prototype pollution guard** — all localStorage reads pass through recursive `sanitize()` that strips `__proto__`/`constructor`/`prototype` keys before object merging
+- **Schema validation** — every deserialized value is type-checked against expected shapes; malformed data falls back to safe defaults
+- **Storage size cap** — 512KB per key prevents localStorage-bomb DoS
+- **Security headers** — CSP (self + Google Fonts), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy
+
 ## Tech Stack
 
 - **Next.js 16** + React 19 + TypeScript (strict)

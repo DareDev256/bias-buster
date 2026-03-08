@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2] — 2026-03-08
+
+### Security
+- **Prototype pollution guard on localStorage reads** — all `JSON.parse` calls in `storage.ts` now route through `safeParse()` which strips `__proto__`, `constructor`, and `prototype` keys recursively before merging, preventing injected localStorage payloads from polluting `Object.prototype`
+- **Schema validation on deserialized data** — `getProgress()`, `getFSRSCards()`, `checkMastery()`, `recordMasteryAttempt()`, `recordLearningEvent()`, and `getLearningAnalytics()` now validate property types and shapes against expected schemas, rejecting malformed data instead of blindly spreading it
+- **Storage size limit** — 512KB cap per localStorage key prevents storage-bomb DoS via tampered keys
+- **Security headers via `next.config.ts`** — added Content-Security-Policy (allowlisting self + Google Fonts only), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy (camera/mic/geo disabled), and X-XSS-Protection
+
 ## [0.5.1] — 2026-03-07
 
 ### Fixed

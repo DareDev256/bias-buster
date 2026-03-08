@@ -3,6 +3,7 @@ import { UserProgress } from "@/types/game";
 // ─── Passionate Learning — Persistence Layer ───
 // Pure functions over localStorage. SSR-safe. Merge-on-read for forward compat.
 // Each game sets its own GAME_ID to namespace storage keys.
+// SECURITY: All reads are sanitized against prototype pollution + schema-validated.
 
 const GAME_ID = "bias_buster"; // OVERRIDE per game
 const STORAGE_KEY = `${GAME_ID}_progress`;
@@ -11,6 +12,69 @@ const MASTERY_KEY = `${GAME_ID}_mastery`;
 const FSRS_KEY = `${GAME_ID}_fsrs_cards`;
 const STREAK_FREEZE_KEY = `${GAME_ID}_streak_freezes`;
 const ANALYTICS_KEY = `${GAME_ID}_analytics`;
+
+// ─── Security: Prototype Pollution Guard ───
+// Strips __proto__, constructor, prototype keys recursively before merging.
+// Prevents localStorage-injected payloads from polluting Object.prototype.
+const BANNED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const MAX_STORAGE_SIZE = 512 * 1024; // 512KB per key — prevent localStorage bomb
+
+function sanitize<T>(raw: unknown): T {
+  if (raw === null || raw === undefined) return raw as T;
+  if (typeof raw !== "object") return raw as T;
+  if (Array.isArray(raw)) return raw.map((item) => sanitize(item)) as T;
+  const clean: Record<string, unknown> = Object.create(null);
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (BANNED_KEYS.has(key)) continue;
+    clean[key] = typeof value === "object" ? sanitize(value) : value;
+  }
+  return clean as T;
+}
+
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  if (raw.length > MAX_STORAGE_SIZE) return fallback;
+  try {
+    return sanitize<T>(JSON.parse(raw));
+  } catch {
+    return fallback;
+  }
+}
+
+// ─── Security: Schema Validators ───
+// Ensure localStorage data matches expected shapes — reject type mismatches.
+
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+function validateProgress(raw: unknown): Partial<UserProgress> {
+  if (!raw || typeof raw !== "object") return {};
+  const r = raw as Record<string, unknown>;
+  const safe: Partial<UserProgress> = {};
+
+  if (isFiniteNumber(r.xp) && r.xp >= 0) safe.xp = r.xp;
+  if (isFiniteNumber(r.level) && r.level >= 1) safe.level = r.level;
+  if (typeof r.currentCategory === "string") safe.currentCategory = r.currentCategory;
+  if (Array.isArray(r.completedLevels) && r.completedLevels.every((v: unknown) => typeof v === "string")) {
+    safe.completedLevels = r.completedLevels as string[];
+  }
+  if (isFiniteNumber(r.streak) && r.streak >= 0) safe.streak = r.streak;
+  if (isFiniteNumber(r.streakFreezes) && r.streakFreezes >= 0) safe.streakFreezes = r.streakFreezes;
+  if (r.itemScores && typeof r.itemScores === "object" && !Array.isArray(r.itemScores)) {
+    const scores: UserProgress["itemScores"] = {};
+    for (const [id, val] of Object.entries(r.itemScores as Record<string, unknown>)) {
+      if (val && typeof val === "object" && !Array.isArray(val)) {
+        const s = val as Record<string, unknown>;
+        if (isFiniteNumber(s.correct) && isFiniteNumber(s.incorrect) && isFiniteNumber(s.lastSeen)) {
+          scores[id] = { correct: s.correct, incorrect: s.incorrect, lastSeen: s.lastSeen };
+        }
+      }
+    }
+    safe.itemScores = scores;
+  }
+  return safe;
+}
 
 const defaultProgress: UserProgress = {
   xp: 0,
@@ -27,7 +91,10 @@ export function getProgress(): UserProgress {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultProgress;
-    return { ...defaultProgress, ...JSON.parse(stored) };
+    const raw = safeParse<unknown>(stored, null);
+    if (!raw) return defaultProgress;
+    const validated = validateProgress(raw);
+    return { ...defaultProgress, ...validated };
   } catch {
     return defaultProgress;
   }
@@ -118,12 +185,13 @@ export interface FSRSCard {
 
 export function getFSRSCards(): FSRSCard[] {
   if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(FSRS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
+  const cards = safeParse<unknown[]>(localStorage.getItem(FSRS_KEY), []);
+  if (!Array.isArray(cards)) return [];
+  return cards.filter((c): c is FSRSCard =>
+    !!c && typeof c === "object" &&
+    typeof (c as FSRSCard).itemId === "string" &&
+    isFiniteNumber((c as FSRSCard).due)
+  );
 }
 
 export function saveFSRSCard(card: FSRSCard): void {
@@ -204,8 +272,16 @@ interface MasteryAttempt {
 export function recordMasteryAttempt(levelKey: string, accuracy: number): void {
   if (typeof window === "undefined") return;
   try {
-    const stored = localStorage.getItem(MASTERY_KEY);
-    const data: Record<string, MasteryAttempt[]> = stored ? JSON.parse(stored) : {};
+    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(MASTERY_KEY), {});
+    const data: Record<string, MasteryAttempt[]> = {};
+    // Re-validate each entry on read
+    for (const [key, val] of Object.entries(raw)) {
+      if (Array.isArray(val)) {
+        data[key] = val.filter((a): a is MasteryAttempt =>
+          !!a && typeof a === "object" && isFiniteNumber((a as MasteryAttempt).accuracy) && isFiniteNumber((a as MasteryAttempt).timestamp)
+        );
+      }
+    }
     const attempts = data[levelKey] || [];
     attempts.push({ accuracy, timestamp: Date.now() });
     data[levelKey] = attempts.slice(-5);
@@ -218,13 +294,14 @@ export function recordMasteryAttempt(levelKey: string, accuracy: number): void {
 export function checkMastery(levelKey: string): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const stored = localStorage.getItem(MASTERY_KEY);
-    if (!stored) return false;
-    const data: Record<string, MasteryAttempt[]> = JSON.parse(stored);
-    const attempts = data[levelKey] || [];
-    if (attempts.length < 3) return false;
-    const last3 = attempts.slice(-3);
-    return last3.every((a) => a.accuracy >= 90);
+    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(MASTERY_KEY), {});
+    const attempts = raw[levelKey];
+    if (!Array.isArray(attempts) || attempts.length < 3) return false;
+    const validated = attempts.filter((a): a is MasteryAttempt =>
+      !!a && typeof a === "object" && isFiniteNumber((a as MasteryAttempt).accuracy)
+    );
+    if (validated.length < 3) return false;
+    return validated.slice(-3).every((a) => a.accuracy >= 90);
   } catch {
     return false;
   }
@@ -244,8 +321,8 @@ export interface LearningEvent {
 export function recordLearningEvent(event: LearningEvent): void {
   if (typeof window === "undefined") return;
   try {
-    const stored = localStorage.getItem(ANALYTICS_KEY);
-    const events: LearningEvent[] = stored ? JSON.parse(stored) : [];
+    const raw = safeParse<unknown[]>(localStorage.getItem(ANALYTICS_KEY), []);
+    const events: LearningEvent[] = Array.isArray(raw) ? raw.filter(isValidLearningEvent) : [];
     events.push(event);
     // Keep last 1000 events
     const trimmed = events.slice(-1000);
@@ -253,6 +330,15 @@ export function recordLearningEvent(event: LearningEvent): void {
   } catch {
     // Silently fail
   }
+}
+
+const VALID_EVENT_TYPES = new Set(["first_correct", "review_correct", "review_incorrect", "concept_mastered", "drop_off"]);
+
+function isValidLearningEvent(e: unknown): e is LearningEvent {
+  if (!e || typeof e !== "object") return false;
+  const ev = e as Record<string, unknown>;
+  return typeof ev.type === "string" && VALID_EVENT_TYPES.has(ev.type) &&
+    typeof ev.itemId === "string" && isFiniteNumber(ev.timestamp);
 }
 
 export function getLearningAnalytics(): {
@@ -266,8 +352,8 @@ export function getLearningAnalytics(): {
     return { totalItemsSeen: 0, itemsMastered: 0, averageTimeToMastery: 0, retentionRate7Day: 0, retentionRate30Day: 0 };
   }
   try {
-    const stored = localStorage.getItem(ANALYTICS_KEY);
-    const events: LearningEvent[] = stored ? JSON.parse(stored) : [];
+    const raw = safeParse<unknown[]>(localStorage.getItem(ANALYTICS_KEY), []);
+    const events: LearningEvent[] = Array.isArray(raw) ? raw.filter(isValidLearningEvent) : [];
 
     const itemsSeen = new Set(events.map((e) => e.itemId));
     const mastered = events.filter((e) => e.type === "concept_mastered");
