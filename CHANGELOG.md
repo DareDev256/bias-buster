@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0] — 2026-03-09
+
+### Changed
+- **Extracted `src/lib/security.ts`** from storage monolith — `sanitize()`, `safeParse()`, `isFiniteNumber()`, `BANNED_KEYS`, and `MAX_STORAGE_SIZE` now live in a dedicated security module, reusable across all Passionate Learning games
+- **Extracted `src/lib/analytics.ts`** from storage monolith — `LearningEvent`, `recordLearningEvent()`, `getLearningAnalytics()`, and event validation now isolated with their own localStorage key management
+- **Slimmed `src/lib/storage.ts`** from 386 → 290 LOC — re-exports extracted modules for full backward compatibility (zero consumer changes needed)
+- Removed unused `STREAK_FREEZE_KEY` and `ANALYTICS_KEY` constants from storage.ts (analytics key now managed by its own module)
+
 ## [0.5.2] — 2026-03-08
 
 ### Security

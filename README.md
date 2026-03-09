@@ -20,9 +20,19 @@ A web-based educational game that teaches AI ethics through branching narrative 
 - **Procedural Audio** — Web Audio API sound effects, zero external dependencies
 - **CRT Aesthetic** — scanline overlay, neon glow, pixel borders, retro typography
 
+## Architecture
+
+The persistence layer follows a modular design:
+
+| Module | Responsibility |
+|--------|----------------|
+| `src/lib/security.ts` | Prototype pollution guard, JSON sanitization, schema validation primitives |
+| `src/lib/analytics.ts` | Learning event tracking, retention metrics, isolated localStorage management |
+| `src/lib/storage.ts` | Game progress CRUD, XP system, streaks, FSRS scheduling, mastery gates — re-exports security & analytics for backward compatibility |
+
 ## Security
 
-- **Prototype pollution guard** — all localStorage reads pass through recursive `sanitize()` that strips `__proto__`/`constructor`/`prototype` keys before object merging
+- **Prototype pollution guard** (`security.ts`) — all localStorage reads pass through recursive `sanitize()` that strips `__proto__`/`constructor`/`prototype` keys before object merging
 - **Schema validation** — every deserialized value is type-checked against expected shapes; malformed data falls back to safe defaults
 - **Storage size cap** — 512KB per key prevents localStorage-bomb DoS
 - **Security headers** — CSP (self + Google Fonts), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy

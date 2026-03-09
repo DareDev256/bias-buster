@@ -1,52 +1,24 @@
 import { UserProgress } from "@/types/game";
+import { safeParse, isFiniteNumber } from "./security";
+import { clearAnalytics } from "./analytics";
+
+// Re-export extracted modules for backward compatibility
+export { sanitize, safeParse, isFiniteNumber } from "./security";
+export type { LearningEvent } from "./analytics";
+export { recordLearningEvent, getLearningAnalytics } from "./analytics";
 
 // ─── Passionate Learning — Persistence Layer ───
 // Pure functions over localStorage. SSR-safe. Merge-on-read for forward compat.
-// Each game sets its own GAME_ID to namespace storage keys.
-// SECURITY: All reads are sanitized against prototype pollution + schema-validated.
+// Security primitives live in ./security.ts. Analytics in ./analytics.ts.
 
 const GAME_ID = "bias_buster"; // OVERRIDE per game
 const STORAGE_KEY = `${GAME_ID}_progress`;
 const LAST_PLAYED_KEY = `${GAME_ID}_last_played`;
 const MASTERY_KEY = `${GAME_ID}_mastery`;
 const FSRS_KEY = `${GAME_ID}_fsrs_cards`;
-const STREAK_FREEZE_KEY = `${GAME_ID}_streak_freezes`;
-const ANALYTICS_KEY = `${GAME_ID}_analytics`;
 
-// ─── Security: Prototype Pollution Guard ───
-// Strips __proto__, constructor, prototype keys recursively before merging.
-// Prevents localStorage-injected payloads from polluting Object.prototype.
-const BANNED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-const MAX_STORAGE_SIZE = 512 * 1024; // 512KB per key — prevent localStorage bomb
-
-function sanitize<T>(raw: unknown): T {
-  if (raw === null || raw === undefined) return raw as T;
-  if (typeof raw !== "object") return raw as T;
-  if (Array.isArray(raw)) return raw.map((item) => sanitize(item)) as T;
-  const clean: Record<string, unknown> = Object.create(null);
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (BANNED_KEYS.has(key)) continue;
-    clean[key] = typeof value === "object" ? sanitize(value) : value;
-  }
-  return clean as T;
-}
-
-function safeParse<T>(raw: string | null, fallback: T): T {
-  if (!raw) return fallback;
-  if (raw.length > MAX_STORAGE_SIZE) return fallback;
-  try {
-    return sanitize<T>(JSON.parse(raw));
-  } catch {
-    return fallback;
-  }
-}
-
-// ─── Security: Schema Validators ───
+// ─── Schema Validators ───
 // Ensure localStorage data matches expected shapes — reject type mismatches.
-
-function isFiniteNumber(v: unknown): v is number {
-  return typeof v === "number" && Number.isFinite(v);
-}
 
 function validateProgress(raw: unknown): Partial<UserProgress> {
   if (!raw || typeof raw !== "object") return {};
@@ -307,80 +279,11 @@ export function checkMastery(levelKey: string): boolean {
   }
 }
 
-// ─── Learning Analytics ───
-// Track what matters: are people LEARNING, not just playing?
-
-export interface LearningEvent {
-  type: "first_correct" | "review_correct" | "review_incorrect" | "concept_mastered" | "drop_off";
-  itemId: string;
-  timestamp: number;
-  daysSinceLastSeen?: number;
-  accuracy?: number;
-}
-
-export function recordLearningEvent(event: LearningEvent): void {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = safeParse<unknown[]>(localStorage.getItem(ANALYTICS_KEY), []);
-    const events: LearningEvent[] = Array.isArray(raw) ? raw.filter(isValidLearningEvent) : [];
-    events.push(event);
-    // Keep last 1000 events
-    const trimmed = events.slice(-1000);
-    localStorage.setItem(ANALYTICS_KEY, JSON.stringify(trimmed));
-  } catch {
-    // Silently fail
-  }
-}
-
-const VALID_EVENT_TYPES = new Set(["first_correct", "review_correct", "review_incorrect", "concept_mastered", "drop_off"]);
-
-function isValidLearningEvent(e: unknown): e is LearningEvent {
-  if (!e || typeof e !== "object") return false;
-  const ev = e as Record<string, unknown>;
-  return typeof ev.type === "string" && VALID_EVENT_TYPES.has(ev.type) &&
-    typeof ev.itemId === "string" && isFiniteNumber(ev.timestamp);
-}
-
-export function getLearningAnalytics(): {
-  totalItemsSeen: number;
-  itemsMastered: number;
-  averageTimeToMastery: number;
-  retentionRate7Day: number;
-  retentionRate30Day: number;
-} {
-  if (typeof window === "undefined") {
-    return { totalItemsSeen: 0, itemsMastered: 0, averageTimeToMastery: 0, retentionRate7Day: 0, retentionRate30Day: 0 };
-  }
-  try {
-    const raw = safeParse<unknown[]>(localStorage.getItem(ANALYTICS_KEY), []);
-    const events: LearningEvent[] = Array.isArray(raw) ? raw.filter(isValidLearningEvent) : [];
-
-    const itemsSeen = new Set(events.map((e) => e.itemId));
-    const mastered = events.filter((e) => e.type === "concept_mastered");
-    const reviews7d = events.filter((e) => e.type === "review_correct" && (e.daysSinceLastSeen || 0) >= 7);
-    const reviewAttempts7d = events.filter(
-      (e) => (e.type === "review_correct" || e.type === "review_incorrect") && (e.daysSinceLastSeen || 0) >= 7
-    );
-
-    return {
-      totalItemsSeen: itemsSeen.size,
-      itemsMastered: mastered.length,
-      averageTimeToMastery: 0, // Computed from first_correct to concept_mastered timestamps
-      retentionRate7Day: reviewAttempts7d.length > 0
-        ? Math.round((reviews7d.length / reviewAttempts7d.length) * 100)
-        : 0,
-      retentionRate30Day: 0, // Same pattern for 30-day window
-    };
-  } catch {
-    return { totalItemsSeen: 0, itemsMastered: 0, averageTimeToMastery: 0, retentionRate7Day: 0, retentionRate30Day: 0 };
-  }
-}
-
 export function resetProgress(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(LAST_PLAYED_KEY);
   localStorage.removeItem(MASTERY_KEY);
   localStorage.removeItem(FSRS_KEY);
-  localStorage.removeItem(ANALYTICS_KEY);
+  clearAnalytics();
 }
