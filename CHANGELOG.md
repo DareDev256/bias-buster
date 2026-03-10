@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1] — 2026-03-10
+
+### Fixed
+- **Double-click race condition on decision buttons** — rapid clicks during the scenario phase could fire `choose()` multiple times, queuing conflicting `setTimeout` timers and corrupting the consequence reveal sequence. Added phase guard to reject clicks outside `"scenario"` state
+- **Memory leak from orphaned setTimeout** — the 2.5s long-term consequence timer was never cleared on unmount, advance, or replay, causing stale `setShowLongTerm(true)` calls to fire into unmounted or reset state. Timer is now tracked via ref and cleaned up on every state transition
+- **Division by zero on summary screen** — if `scenarios` array were empty (or all scenarios had zero-decision entries), `totalScore / maxPossible` produced `NaN%`. Added zero-guard and `Math.max` empty-array protection
+- **XP bar showed 0% at level-up thresholds** — `xp % 100` maps 100→0, 200→0, etc., displaying an empty progress bar at the exact moment a player levels up. Replaced with level-boundary arithmetic so the bar correctly reflects progress within the current level
+
 ## [0.6.0] — 2026-03-09
 
 ### Changed

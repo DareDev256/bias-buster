@@ -6,7 +6,12 @@ interface XPBarProps {
 }
 
 export function XPBar({ xp, level }: XPBarProps) {
-  const xpInLevel = xp % 100;
+  // XP needed to reach the *next* level threshold
+  const nextLevelXP = level * 100;
+  const prevLevelXP = (level - 1) * 100;
+  const xpInLevel = xp - prevLevelXP;
+  const levelRange = nextLevelXP - prevLevelXP; // always 100 for now, but future-proof
+  const pct = Math.min(100, Math.round((xpInLevel / levelRange) * 100));
 
   return (
     <div className="w-full max-w-md mx-auto mb-6">
@@ -15,13 +20,13 @@ export function XPBar({ xp, level }: XPBarProps) {
           LVL {level}
         </span>
         <span className="font-pixel text-[10px] text-game-accent">
-          {xpInLevel}/100 XP
+          {xpInLevel}/{levelRange} XP
         </span>
       </div>
       <div className="h-3 bg-game-dark border border-game-primary/30">
         <div
           className="h-full bg-game-primary xp-fill"
-          style={{ width: `${xpInLevel}%` }}
+          style={{ width: `${pct}%` }}
         />
       </div>
     </div>

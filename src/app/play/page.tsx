@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { scenarios, type Decision, type BiasScenario } from "@/data/scenarios";
 import { ScalesOfImpact } from "@/components/game/ScalesOfImpact";
@@ -38,16 +38,28 @@ export default function PlayPage() {
   const [showLongTerm, setShowLongTerm] = useState(false);
   const [history, setHistory] = useState<PlayedDecision[]>([]);
   const [totalScore, setTotalScore] = useState(0);
+  const longTermTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const current = scenarios[index] as BiasScenario | undefined;
   const isFinished = phase === "summary";
 
+  // Clean up stale timeout on unmount to prevent state updates after teardown
+  useEffect(() => {
+    return () => {
+      if (longTermTimer.current) clearTimeout(longTermTimer.current);
+    };
+  }, []);
+
   const choose = useCallback((d: Decision) => {
+    // Guard: ignore clicks if already past the scenario phase (prevents double-click race)
+    if (phase !== "scenario") return;
+    // Clear any lingering timer from a previous scenario
+    if (longTermTimer.current) clearTimeout(longTermTimer.current);
     setChosen(d);
     setPhase("consequence");
     setShowLongTerm(false);
-    setTimeout(() => setShowLongTerm(true), 2500);
-  }, []);
+    longTermTimer.current = setTimeout(() => setShowLongTerm(true), 2500);
+  }, [phase]);
 
   const toLesson = useCallback(() => {
     setPhase("lesson");
@@ -103,6 +115,8 @@ export default function PlayPage() {
 
   const advance = useCallback(() => {
     if (!chosen || !current) return;
+    // Kill any pending long-term timer before transitioning
+    if (longTermTimer.current) clearTimeout(longTermTimer.current);
     const played: PlayedDecision = { scenario: current, decision: chosen };
 
     // Persist this scenario's result immediately
@@ -123,8 +137,9 @@ export default function PlayPage() {
   }, [chosen, current, index, history, persistScenarioResult, persistSessionResult]);
 
   // Max possible equity — all scenarios for summary, played scenarios for in-game
+  // Guard: Math.max() on empty array returns -Infinity; default to 0 for safety
   const maxPossible = useMemo(
-    () => scenarios.reduce((s, sc) => s + Math.max(...sc.decisions.map((d) => d.impactScore)), 0),
+    () => scenarios.reduce((s, sc) => s + (sc.decisions.length > 0 ? Math.max(...sc.decisions.map((d) => d.impactScore)) : 0), 0),
     [],
   );
   // Include the current scenario's max in the denominator so scales aren't stale
@@ -137,7 +152,7 @@ export default function PlayPage() {
 
   // ── SUMMARY SCREEN ──
   if (isFinished) {
-    const pct = Math.round((totalScore / maxPossible) * 100);
+    const pct = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md text-center">
@@ -161,7 +176,7 @@ export default function PlayPage() {
               </div>
             </div>
           ))}
-          <button onClick={() => { setIndex(0); setPhase("scenario"); setChosen(null); setHistory([]); setTotalScore(0); setShowLongTerm(false); }} className="btn-retro text-[8px] text-game-primary border-2 border-game-primary px-6 py-3 mt-6 hover:bg-game-primary/10">
+          <button onClick={() => { if (longTermTimer.current) clearTimeout(longTermTimer.current); setIndex(0); setPhase("scenario"); setChosen(null); setHistory([]); setTotalScore(0); setShowLongTerm(false); }} className="btn-retro text-[8px] text-game-primary border-2 border-game-primary px-6 py-3 mt-6 hover:bg-game-primary/10">
             PLAY AGAIN
           </button>
         </motion.div>
