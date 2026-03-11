@@ -43,6 +43,7 @@ The persistence layer follows a modular design:
 - **Tailwind CSS v4** (CSS-first `@theme inline`)
 - **Framer Motion** — staggered reveals, spring animations
 - **ts-fsrs** — spaced repetition scheduling
+- **Vitest** — unit test suite (47 tests across security, storage, headline generation)
 - **localStorage** — SSR-safe persistence, no backend required
 
 ## Quick Start
@@ -52,6 +53,8 @@ npm install
 npm run dev      # → http://localhost:3000
 npm run build    # production build
 npm run lint     # ESLint check
+npm test         # Run test suite (vitest)
+npm run test:watch  # Watch mode
 ```
 
 Zero API keys required. All scenarios and consequences are pre-written.

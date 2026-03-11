@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2] — 2026-03-11
+
+### Added
+- **Test infrastructure** — Vitest configured with path aliases, `npm test` and `npm run test:watch` scripts
+- **Security tests** (14 tests) — prototype pollution stripping, recursive sanitization, safeParse size cap enforcement, JSON parse fallback, isFiniteNumber edge cases (NaN, Infinity, type coercion)
+- **Storage tests** (26 tests) — progress CRUD round-trip, corrupted data rejection (NaN/string/negative values), XP leveling math, recall multiplier tiers (1x/2x/3x at 0/7/30 days), FSRS card upsert + due-date filtering, mastery gate 90% threshold enforcement, streak increment/reset/freeze consumption, level completion deduplication + freeze-every-10 reward, review queue fallback ordering
+- **Headline generator tests** (7 tests) — severity classification (landmark/significant/routine), dominant ripple selection with negative tie-breaking, banner text accuracy per severity tier, deterministic dateline assignment
+
 ## [0.6.1] — 2026-03-10
 
 ### Fixed
