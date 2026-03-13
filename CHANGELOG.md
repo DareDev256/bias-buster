@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.3] — 2026-03-13
+
+### Added
+- **Headline Generator deep dive** in README — portfolio-grade documentation of the deterministic 3-step pipeline (`dominantRipple` → `classifySeverity` → banner synthesis), with pipeline diagram, severity tier table, template pattern reference, determinism guarantee explanation, and component integration flow
+
 ## [0.6.2] — 2026-03-11
 
 ### Added

@@ -20,6 +20,64 @@ A web-based educational game that teaches AI ethics through branching narrative 
 - **Procedural Audio** — Web Audio API sound effects, zero external dependencies
 - **CRT Aesthetic** — scanline overlay, neon glow, pixel borders, retro typography
 
+## Deep Dive: Headline Generator
+
+`src/utils/headlineGenerator.ts` — 72 lines that turn raw gameplay data into broadsheet-style newspaper headlines. No LLM, no randomness — a deterministic 3-step pipeline that feels editorially authored.
+
+### The Pipeline
+
+```
+CaseOutcome.ripples[] ──→ ① Dominant Ripple ──→ ② Severity ──→ ③ Banner
+                              Selection          Classification    Synthesis
+```
+
+**① Dominant Ripple Selection** — Sort ripples by magnitude (descending). On ties, negative ripples win — mirroring real editorial instinct where adverse outcomes lead. This single design choice makes headlines feel journalistically authentic.
+
+```ts
+// Negative breaks ties — bad news always leads
+return [...ripples].sort((a, b) => {
+  if (b.magnitude !== a.magnitude) return b.magnitude - a.magnitude;
+  return a.type === "negative" ? -1 : 1;
+})[0];
+```
+
+**② Severity Classification** — Average all ripple magnitudes into three tiers:
+
+| Avg Magnitude | Severity | Edition Tag | Accent Color |
+|:---:|:---:|:---:|:---:|
+| ≥ 70 | `landmark` | ◆ SPECIAL EDITION ◆ | Amber `#f39c12` |
+| ≥ 40 | `significant` | EVENING EDITION | Teal `#1abc9c` |
+| < 40 | `routine` | DAILY BRIEF | Silver `#bdc3c7` |
+
+**③ Banner Synthesis** — Combines severity tier + dominant sphere + polarity (positive vs. negative majority) into template slots. Six unique patterns across 3 severity × 2 polarity branches:
+
+```
+landmark  + negative → "LANDMARK RULING SENDS SHOCKWAVES THROUGH {SPHERE}"
+landmark  + positive → "HISTORIC VERDICT BOLSTERS {SPHERE} IN SWEEPING DECISION"
+significant + negative → "{SPHERE} FACES SCRUTINY AS RULING DIVIDES EXPERTS"
+significant + positive → "DECISION BRINGS CAUTIOUS OPTIMISM FOR {SPHERE}"
+routine              → "COURT ISSUES MEASURED RULING ON {SPHERE} MATTER"
+```
+
+### Determinism Guarantee
+
+Same input always produces the same headline. The dateline (e.g., "NEO-TOKYO BUREAU", "FEDERAL AI COURT") is selected via `title.length % DATELINES.length` — no `Math.random()`, no timestamps. This makes the system fully testable and snapshot-safe.
+
+### How It Connects
+
+The generator is consumed by `ConsequenceVisualization.tsx`, which renders the output as a "Verdict Scroll" — a front-page banner that unfurls via 3D `rotateX` animation (90° → 0°) with severity-coded accent borders. Landmark verdicts get an additional animated underline that scales in from center.
+
+```
+headlineGenerator.ts ──→ ConsequenceVisualization.tsx ──→ Play Page
+  (data → text)           (text → animated UI)            (game loop)
+```
+
+### Test Coverage
+
+7 unit tests covering all severity tiers, polarity branches, dominant sphere selection, negative tie-breaking, and deterministic dateline assignment. Run with `npm test`.
+
+---
+
 ## Architecture
 
 The persistence layer follows a modular design:
