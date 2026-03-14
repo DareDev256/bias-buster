@@ -1,3 +1,4 @@
+import "@/lib/config"; // Initialize game ID before any storage access
 import { UserProgress } from "@/types/game";
 import { safeParse, isFiniteNumber } from "./security";
 import { clearAnalytics } from "./analytics";
@@ -6,16 +7,14 @@ import { clearAnalytics } from "./analytics";
 export { sanitize, safeParse, isFiniteNumber } from "./security";
 export type { LearningEvent } from "./analytics";
 export { recordLearningEvent, getLearningAnalytics } from "./analytics";
+export { configureStorage, storageKey, getGameId } from "./game-id";
 
 // ─── Passionate Learning — Persistence Layer ───
 // Pure functions over localStorage. SSR-safe. Merge-on-read for forward compat.
 // Security primitives live in ./security.ts. Analytics in ./analytics.ts.
+// Game ID configured via configureStorage() — no more hardcoded GAME_ID per game.
 
-const GAME_ID = "bias_buster"; // OVERRIDE per game
-const STORAGE_KEY = `${GAME_ID}_progress`;
-const LAST_PLAYED_KEY = `${GAME_ID}_last_played`;
-const MASTERY_KEY = `${GAME_ID}_mastery`;
-const FSRS_KEY = `${GAME_ID}_fsrs_cards`;
+import { storageKey } from "./game-id";
 
 // ─── Schema Validators ───
 // Ensure localStorage data matches expected shapes — reject type mismatches.
@@ -61,7 +60,7 @@ const defaultProgress: UserProgress = {
 export function getProgress(): UserProgress {
   if (typeof window === "undefined") return defaultProgress;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey("progress"));
     if (!stored) return defaultProgress;
     const raw = safeParse<unknown>(stored, null);
     if (!raw) return defaultProgress;
@@ -74,7 +73,7 @@ export function getProgress(): UserProgress {
 
 export function saveProgress(progress: UserProgress): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(storageKey("progress"), JSON.stringify(progress));
 }
 
 export function updateProgress(updates: Partial<UserProgress>): UserProgress {
@@ -157,7 +156,7 @@ export interface FSRSCard {
 
 export function getFSRSCards(): FSRSCard[] {
   if (typeof window === "undefined") return [];
-  const cards = safeParse<unknown[]>(localStorage.getItem(FSRS_KEY), []);
+  const cards = safeParse<unknown[]>(localStorage.getItem(storageKey("fsrs_cards")), []);
   if (!Array.isArray(cards)) return [];
   return cards.filter((c): c is FSRSCard =>
     !!c && typeof c === "object" &&
@@ -175,7 +174,7 @@ export function saveFSRSCard(card: FSRSCard): void {
   } else {
     cards.push(card);
   }
-  localStorage.setItem(FSRS_KEY, JSON.stringify(cards));
+  localStorage.setItem(storageKey("fsrs_cards"), JSON.stringify(cards));
 }
 
 export function getDueItems(limit = 5): string[] {
@@ -207,7 +206,7 @@ export function getItemsForReview(limit = 5): string[] {
 export function updateStreak(): UserProgress {
   if (typeof window === "undefined") return getProgress();
   const current = getProgress();
-  const lastPlayed = localStorage.getItem(LAST_PLAYED_KEY);
+  const lastPlayed = localStorage.getItem(storageKey("last_played"));
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
 
@@ -226,7 +225,7 @@ export function updateStreak(): UserProgress {
     }
   }
 
-  localStorage.setItem(LAST_PLAYED_KEY, today);
+  localStorage.setItem(storageKey("last_played"), today);
   return updateProgress({
     streak: newStreak,
     streakFreezes: current.streakFreezes - freezesUsed,
@@ -244,7 +243,7 @@ interface MasteryAttempt {
 export function recordMasteryAttempt(levelKey: string, accuracy: number): void {
   if (typeof window === "undefined") return;
   try {
-    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(MASTERY_KEY), {});
+    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(storageKey("mastery")), {});
     const data: Record<string, MasteryAttempt[]> = {};
     // Re-validate each entry on read
     for (const [key, val] of Object.entries(raw)) {
@@ -257,7 +256,7 @@ export function recordMasteryAttempt(levelKey: string, accuracy: number): void {
     const attempts = data[levelKey] || [];
     attempts.push({ accuracy, timestamp: Date.now() });
     data[levelKey] = attempts.slice(-5);
-    localStorage.setItem(MASTERY_KEY, JSON.stringify(data));
+    localStorage.setItem(storageKey("mastery"), JSON.stringify(data));
   } catch {
     // Silently fail on storage errors
   }
@@ -266,7 +265,7 @@ export function recordMasteryAttempt(levelKey: string, accuracy: number): void {
 export function checkMastery(levelKey: string): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(MASTERY_KEY), {});
+    const raw = safeParse<Record<string, unknown>>(localStorage.getItem(storageKey("mastery")), {});
     const attempts = raw[levelKey];
     if (!Array.isArray(attempts) || attempts.length < 3) return false;
     const validated = attempts.filter((a): a is MasteryAttempt =>
@@ -281,9 +280,9 @@ export function checkMastery(levelKey: string): boolean {
 
 export function resetProgress(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(LAST_PLAYED_KEY);
-  localStorage.removeItem(MASTERY_KEY);
-  localStorage.removeItem(FSRS_KEY);
+  localStorage.removeItem(storageKey("progress"));
+  localStorage.removeItem(storageKey("last_played"));
+  localStorage.removeItem(storageKey("mastery"));
+  localStorage.removeItem(storageKey("fsrs_cards"));
   clearAnalytics();
 }

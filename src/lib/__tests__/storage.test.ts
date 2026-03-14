@@ -11,7 +11,11 @@ const localStorageMock = {
 vi.stubGlobal("localStorage", localStorageMock);
 vi.stubGlobal("window", globalThis);
 
-// Import after mocking
+// Configure game ID before importing storage (which triggers config import)
+import { configureStorage } from "../game-id";
+configureStorage("bias_buster");
+
+// Import after mocking + configuring
 import {
   getProgress, saveProgress, addXP, completeLevel,
   updateItemScore, getRecallMultiplier,

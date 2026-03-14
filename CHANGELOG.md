@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0] — 2026-03-14
+
+### Changed
+- **Dynamic storage key derivation** — replaced hardcoded `GAME_ID` constants in `storage.ts` and `analytics.ts` with a `configureStorage(id)` API + `storageKey(suffix)` derivation. Each Passionate Learning game now edits a single `src/lib/config.ts` file instead of find-and-replacing constants across modules
+- **New module `src/lib/game-id.ts`** — single source of truth for game ID configuration with input validation (lowercase alphanumeric + underscores)
+- **New module `src/lib/config.ts`** — one-line game identity file that each template clone edits
+
+### Fixed
+- **`averageTimeToMastery` was always 0** — now computes hours between each item's earliest `first_correct` and `concept_mastered` events, averaged across all mastered items
+- **`retentionRate30Day` was always 0** — now mirrors the 7-day retention pattern, filtering review events with `daysSinceLastSeen >= 30`
+
 ## [0.6.3] — 2026-03-13
 
 ### Added

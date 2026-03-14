@@ -84,9 +84,11 @@ The persistence layer follows a modular design:
 
 | Module | Responsibility |
 |--------|----------------|
+| `src/lib/config.ts` | Single-line game identity — the only file each Passionate Learning game edits |
+| `src/lib/game-id.ts` | `configureStorage(id)` API + `storageKey(suffix)` derivation with input validation |
 | `src/lib/security.ts` | Prototype pollution guard, JSON sanitization, schema validation primitives |
-| `src/lib/analytics.ts` | Learning event tracking, retention metrics, isolated localStorage management |
-| `src/lib/storage.ts` | Game progress CRUD, XP system, streaks, FSRS scheduling, mastery gates — re-exports security & analytics for backward compatibility |
+| `src/lib/analytics.ts` | Learning event tracking, retention metrics (7-day + 30-day), time-to-mastery computation |
+| `src/lib/storage.ts` | Game progress CRUD, XP system, streaks, FSRS scheduling, mastery gates — re-exports all modules |
 
 ## Security
 
